@@ -1,6 +1,6 @@
 {
   "name": "fluffice",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A plush office on your screen that shows which Claude Code session needs you.",
   "author": { "name": "yagami271" },
   "homepage": "https://github.com/yagami271/fluffice",
