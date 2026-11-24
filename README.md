@@ -24,7 +24,7 @@ npx github:yagami271/fluffice
 claude plugin marketplace add yagami271/fluffice && claude plugin install fluffice@fluffice
 ```
 
-The office then starts with your next Claude Code session, and opens in your browser the first time. After that, type `/fluffice:open` to see it, `/fluffice:link` to show it in another browser, and `/fluffice:stop` to close it.
+The office then starts with your next Claude Code session, and opens in your browser the first time. After that, type `/fluffice:open` to see it and `/fluffice:stop` to close it. To update, run `claude plugin update fluffice@fluffice`.
 
 There is nothing to configure. Put the page on a spare screen and make it full screen.
 
@@ -56,7 +56,7 @@ Sound is off until you click *Sound off*, because browsers require a click. Each
 
 - Fluffice runs on your machine and listens on `127.0.0.1` only. It sends nothing anywhere, and the page loads nothing from the internet.
 - It reads the session files in `~/.claude/sessions`, and the end of each transcript to find the title. Your messages are never shown or stored.
-- Other accounts of the same computer cannot read it: each browser is connected once, with a one-time key. `fluffice` does it for you, and `fluffice --link` does it for another browser.
+- Websites you visit cannot read it. Other accounts of the same computer can see your project names and session titles, so avoid it on a shared machine.
 - It remembers looks, desks and what you have seen in `~/.fluffice/memory.json`.
 
 ## Options
@@ -65,7 +65,6 @@ Sound is off until you click *Sound off*, because browsers require a click. Each
 | --- | --- |
 | `fluffice --no-open` | Start without opening the browser |
 | `fluffice --background` | Start in the background, if not already running |
-| `fluffice --link` | Print a link that connects another browser, good for 10 minutes |
 | `fluffice --stop` | Stop the office running in the background |
 | `PORT=4800 fluffice` | Use another port |
 

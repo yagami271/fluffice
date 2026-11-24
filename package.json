@@ -1,6 +1,6 @@
 {
   "name": "fluffice",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "A plush office on your screen that shows which Claude Code session needs you.",
   "type": "module",
   "bin": { "fluffice": "server.mjs" },

@@ -20,7 +20,31 @@ const GROUP_ABOVE = DESKS.length, GROUP_UNTIL = DESKS.length - 2; // the gap avo
 // Zones: front, queue, queue-hidden, desk, desk-hidden, shelf, chest, chest-hidden.
 export const isVisible = (zone) => !zone.endsWith('-hidden');
 
-export const emptyMemory = () => ({ projects: {}, sessions: {} });
+// No prototype: a project folder can be named "constructor" or "__proto__".
+const bare = () => Object.create(null);
+export const emptyMemory = () => ({ projects: bare(), sessions: bare() });
+
+// Keeps what makes sense of a saved memory, so that a damaged file never breaks the office.
+export function repairMemory(raw) {
+  const memory = emptyMemory();
+  const within = (v, max) => Number.isInteger(v) && v >= 0 && v < max;
+  const entries = (v) => (v !== null && typeof v === 'object' ? Object.entries(v) : []);
+  for (const [name, look] of entries(raw?.projects)) if (within(look, LOOK_COUNT)) memory.projects[name] = look;
+  for (const [id, m] of entries(raw?.sessions)) {
+    if (m === null || typeof m !== 'object') continue;
+    const kept = (memory.sessions[id] = {});
+    if (within(m.acc, ACCESSORY_COUNT)) kept.acc = m.acc;
+    if (within(m.desk, DESKS.length)) kept.desk = m.desk;
+    if (within(m.slot, SHELF_SLOTS + CHEST_SLOTS)) kept.slot = m.slot;
+    for (const k of ['seen', 'done']) if (Number.isFinite(m[k])) kept[k] = m[k];
+    if (typeof m.last === 'string') kept.last = m.last;
+  }
+  if (raw?.grouped === true) {
+    memory.grouped = true; memory.groupDesks = bare();
+    for (const [name, desk] of entries(raw.groupDesks)) if (within(desk, DESKS.length)) memory.groupDesks[name] = desk;
+  }
+  return memory;
+}
 
 function moodOf(s, m, now) {
   if (s.state !== 'idle') return s.state;
@@ -83,7 +107,7 @@ function placeDesks(out, memory, hot) {
   }
 
   memory.grouped = true;
-  const known = (memory.groupDesks ??= {});
+  const known = (memory.groupDesks ??= bare());
   const projects = [...new Set(workers.map((s) => s.project))];
   for (const p of Object.keys(known)) if (!projects.includes(p)) delete known[p];
   for (const p of projects) if (known[p] !== undefined) taken.add(known[p]);

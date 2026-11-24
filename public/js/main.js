@@ -54,7 +54,7 @@ function resize() {
 let dirty = true;
 
 const room = buildRoom(scene);
-let hourOverride = params.has('hour') ? Number(params.get('hour')) : null;
+let hourOverride = Number.isFinite(parseFloat(params.get('hour'))) ? parseFloat(params.get('hour')) : null;
 const currentHour = () => { if (hourOverride !== null) return hourOverride; const d = new Date(); return d.getHours() + d.getMinutes() / 60; };
 let day = daylight(currentHour());
 room.setHour(day);
@@ -108,7 +108,7 @@ document.querySelectorAll('[data-hear]').forEach((b) => b.addEventListener('clic
 
 // ---------- Sessions → characters ----------
 
-let pointer = null, showing = [], token = null, unpaired = false;
+let pointer = null, showing = [], lost = false;
 const actors = new Map();
 const lastZones = new Map();
 const vec = (p) => new THREE.Vector3(...p);
@@ -239,7 +239,7 @@ function acknowledge(id) {
     else { d.state = 'work'; d.since = Date.now(); }
     showDemo();
   } else if (s.mood === 'done') {
-    fetch('/seen', { method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` }, body: JSON.stringify({ id }) }).catch(() => {});
+    fetch('/seen', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => {});
   }
 }
 
@@ -258,7 +258,8 @@ function say(list) {
   const by = (m) => list.filter((s) => s.mood === m);
   const hot = [...by('ask'), ...by('done')], work = by('work').length, off = by('rest').length + by('sleep').length;
   const parts = [];
-  if (hot.length === 0) parts.push(unpaired && !demo ? T.unpaired : work ? T.calm : T.quiet);
+  if (lost && !demo) parts.push(T.lost);
+  else if (hot.length === 0) parts.push(work ? T.calm : T.quiet);
   else {
     const full = hot.map((s) => [`${nameOf(s, list)} ${phraseOf(s)}`, s.mood]);
     const count = (m, one, plural, named) => { const n = by(m).length; return n ? [[n > 1 ? `${n} ${plural}` : `${named ? nameOf(by(m)[0], list) : 1} ${one}`, m]] : []; };
@@ -428,45 +429,20 @@ await document.fonts.load('800 40px "Bricolage Grotesque"').catch(() => {});
 resize();
 if (!film) requestAnimationFrame(frame);
 
-// ---------- Connection ----------
-
-// A one-time key in the address (after the #, so it is never sent) is traded once for the token.
-async function pair() {
-  const key = new URLSearchParams(location.hash.slice(1)).get('key');
-  if (key) {
-    history.replaceState(null, '', location.pathname + location.search);
-    try {
-      const res = await fetch('/claim', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ key }) });
-      if (res.ok) { token = (await res.json()).token; try { localStorage.setItem('fluffice:token', token); } catch { /* no storage: paired until the page closes */ } }
-    } catch { /* the stream below reports it */ }
-  }
-  try { token ??= localStorage.getItem('fluffice:token'); } catch { /* no storage */ }
-}
-
-async function follow() {
-  for (let received = false; ;) {
-    try {
-      const res = await fetch('/events', { headers: { authorization: `Bearer ${token}` } });
-      if (res.status === 401) { unpaired = true; if (!demo) sync([]); return; }
-      if (!res.ok) throw new Error(res.status);
-      const reader = res.body.pipeThrough(new TextDecoderStream()).getReader();
-      for (let buffer = ''; ;) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        buffer += value;
-        for (let end; (end = buffer.indexOf('\n\n')) >= 0; buffer = buffer.slice(end + 2)) {
-          live = JSON.parse(buffer.slice('data: '.length, end)); received = true;
-          if (!demo) sync(live);
-        }
-      }
-    } catch { if (!received && !demo) setDemo(true); }
-    await new Promise((r) => setTimeout(r, 2000));
-  }
-}
-
 if (params.has('demo')) setDemo(true);
-if (!film) { await pair(); follow(); }
-addEventListener('hashchange', async () => { if (location.hash.includes('key=')) { token = null; await pair(); location.reload(); } });
+
+// A display that stays on must come back by itself, and never show stale sessions as if they were live.
+let received = false, silence = null;
+function connect() {
+  const events = new EventSource('/events');
+  events.onmessage = (e) => { clearTimeout(silence); silence = null; lost = false; received = true; live = JSON.parse(e.data); if (!demo) sync(live); };
+  events.onerror = () => {
+    if (!received && !demo) setDemo(true);
+    silence ??= setTimeout(() => { lost = true; live = []; if (!demo) { [...actors.values()].forEach(remove); lastZones.clear(); sync(live); } }, 6000);
+    if (events.readyState === EventSource.CLOSED) setTimeout(connect, 5000);
+  };
+}
+if (!film) connect();
 
 // Handle used by the tests and to film the demo frame by frame (?demo&film).
 window.fluffice = {

@@ -96,6 +96,7 @@ const FOLEY_GAP = { step: 0.07, land: 0.12, lamp: 0.15, puff: 0.2, pop: 0.05, he
 export function createSound({ isNight, onChange }) {
   let pref = { on: false, volume: 0.6 };
   try { pref = { ...pref, ...JSON.parse(localStorage.getItem('fluffice:sound')) }; } catch { /* unreadable setting or no storage */ }
+  pref = { on: pref.on === true, volume: Number.isFinite(pref.volume) ? Math.max(0, Math.min(1, pref.volume)) : 0.6 };
   let ctx = null, bus = null, current = null, queued = null, nextAlert = 0, recent = [];
   const lastFoley = {};
 

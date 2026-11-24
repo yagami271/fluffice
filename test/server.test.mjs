@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url';
 const PORT = 4799, dir = fs.mkdtempSync(path.join(os.tmpdir(), 'fluffice-'));
 const env = { ...process.env, PORT: String(PORT), FLUFFICE_HOME: path.join(dir, 'home'), FLUFFICE_CLAUDE_DIR: path.join(dir, 'claude') };
 const sessions = path.join(dir, 'claude', 'sessions'), transcripts = path.join(dir, 'claude', 'projects', '-x-p');
-let child, token;
+let child;
 
 // Raw requests, so that the Host header and the path go out exactly as written.
 const call = (target, { method = 'GET', headers = {}, body } = {}) => new Promise((resolve, reject) => {
@@ -22,19 +22,16 @@ const call = (target, { method = 'GET', headers = {}, body } = {}) => new Promis
   req.on('error', reject); req.end(body);
 });
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
-const paired = () => ({ authorization: `Bearer ${token}` });
-const list = async () => JSON.parse((await call('/events', { headers: paired() })).text.replace(/^data: /, ''));
-const json = { 'content-type': 'application/json', origin: `http://localhost:${PORT}` };
+const list = async () => JSON.parse((await call('/events')).text.replace(/^data: /, ''));
 const put = (status, waitingFor) => fs.writeFileSync(path.join(sessions, '1.json'), JSON.stringify({ pid: process.pid, sessionId: 's1', cwd: '/x/p', startedAt: 1, status, waitingFor, statusUpdatedAt: Date.now(), entrypoint: 'cli' }));
-const seen = (headers, id = 's1') => call('/seen', { method: 'POST', headers: { ...json, ...paired(), ...headers }, body: JSON.stringify({ id }) });
-const claim = (key, headers) => call('/claim', { method: 'POST', headers: { ...json, ...headers }, body: JSON.stringify({ key }) });
+const seen = (headers, id = 's1') => call('/seen', { method: 'POST', headers: { 'content-type': 'application/json', origin: `http://localhost:${PORT}`, ...headers }, body: JSON.stringify({ id }) });
 
 before(async () => {
   fs.mkdirSync(sessions, { recursive: true }); fs.mkdirSync(transcripts, { recursive: true });
   fs.writeFileSync(path.join(transcripts, 's1.jsonl'), '{"type":"ai-title","aiTitle":"Auto"}\n{"type":"user","message":"{\\"type\\":\\"ai-title\\",\\"aiTitle\\":\\"DECOY\\"}"}\n');
   put('busy');
   child = spawn(process.execPath, [fileURLToPath(new URL('../server.mjs', import.meta.url)), '--no-open'], { env, stdio: 'ignore' });
-  for (let i = 0; i < 40; i++) { try { await call('/health'); token = fs.readFileSync(path.join(env.FLUFFICE_HOME, 'token'), 'utf8'); return; } catch { await wait(100); } }
+  for (let i = 0; i < 40; i++) { try { await call('/health'); return; } catch { await wait(100); } }
   throw new Error('the server did not start');
 });
 after(() => { child.kill(); fs.rmSync(dir, { recursive: true, force: true }); });
@@ -51,24 +48,6 @@ test('another site cannot mark sessions as seen', async () => {
   assert.equal((await seen({ origin: 'https://evil.example' })).status, 403);
   assert.equal((await seen({ 'content-type': 'text/plain' })).status, 403);
   assert.equal((await seen({}, '__proto__')).status, 404);
-});
-
-test('nothing is readable without being paired', async () => {
-  assert.equal((await call('/events')).status, 401);
-  assert.equal((await call('/events', { headers: { authorization: 'Bearer nope' } })).status, 401);
-  assert.equal((await call('/events', { headers: { authorization: `Bearer ${token}x` } })).status, 401);
-  assert.equal((await seen({ authorization: '' })).status, 401);
-  assert.equal((await call('/key', { method: 'POST' })).status, 403);
-  if (process.platform !== 'win32') assert.equal(fs.statSync(path.join(env.FLUFFICE_HOME, 'token')).mode & 0o077, 0);
-});
-
-test('a key pairs one browser, once', async () => {
-  const { key } = JSON.parse((await call('/key', { method: 'POST', headers: paired() })).text);
-  assert.equal((await claim(key, { origin: 'https://evil.example' })).status, 403);
-  assert.equal(JSON.parse((await claim(key)).text).token, token);
-  assert.equal((await claim(key)).status, 401);
-  assert.equal((await claim('__proto__')).status, 401);
-  assert.equal((await call('/claim', { method: 'POST', headers: json, body: 'null' })).status, 400);
 });
 
 test('a session goes from working to done, then rests once seen', async () => {

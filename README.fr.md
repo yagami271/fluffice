@@ -24,7 +24,7 @@ npx github:yagami271/fluffice
 claude plugin marketplace add yagami271/fluffice && claude plugin install fluffice@fluffice
 ```
 
-Le bureau démarre alors avec ta prochaine session Claude Code, et s'ouvre dans ton navigateur la première fois. Ensuite, tape `/fluffice:open` pour le voir, `/fluffice:link` pour l'afficher dans un autre navigateur, et `/fluffice:stop` pour le fermer.
+Le bureau démarre alors avec ta prochaine session Claude Code, et s'ouvre dans ton navigateur la première fois. Ensuite, tape `/fluffice:open` pour le voir et `/fluffice:stop` pour le fermer. Pour mettre à jour : `claude plugin update fluffice@fluffice`.
 
 Il n'y a rien à configurer. Mets la page sur un écran libre, en plein écran.
 
@@ -56,7 +56,7 @@ Le son est coupé tant que tu n'as pas cliqué sur *Son coupé*, car les navigat
 
 - Fluffice tourne sur ta machine et n'écoute que `127.0.0.1`. Il n'envoie rien, et la page ne charge rien depuis Internet.
 - Il lit les fichiers de session dans `~/.claude/sessions`, et la fin de chaque transcription pour trouver le titre. Tes messages ne sont jamais affichés ni enregistrés.
-- Les autres comptes du même ordinateur ne peuvent pas le lire : chaque navigateur est connecté une fois, avec une clé à usage unique. `fluffice` le fait pour toi, et `fluffice --link` le fait pour un autre navigateur.
+- Les sites que tu visites ne peuvent pas le lire. Les autres comptes du même ordinateur peuvent voir tes noms de projets et titres de sessions : évite-le sur une machine partagée.
 - Il retient les apparences, les places et ce que tu as vu dans `~/.fluffice/memory.json`.
 
 ## Options
@@ -65,7 +65,6 @@ Le son est coupé tant que tu n'as pas cliqué sur *Son coupé*, car les navigat
 | --- | --- |
 | `fluffice --no-open` | Démarrer sans ouvrir le navigateur |
 | `fluffice --background` | Démarrer en arrière-plan, s'il ne tourne pas déjà |
-| `fluffice --link` | Afficher un lien qui connecte un autre navigateur, valable 10 minutes |
 | `fluffice --stop` | Arrêter le bureau lancé en arrière-plan |
 | `PORT=4800 fluffice` | Utiliser un autre port |
 
