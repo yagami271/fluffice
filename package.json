@@ -1,0 +1,15 @@
+{
+  "name": "fluffice",
+  "version": "0.1.0",
+  "description": "A plush office on your screen that shows which Claude Code session needs you.",
+  "type": "module",
+  "bin": { "fluffice": "server.mjs" },
+  "files": ["server.mjs", "public", "README.md", "README.fr.md", "LICENSE"],
+  "scripts": { "start": "node server.mjs", "dev": "node server.mjs --no-open", "test": "node --test" },
+  "engines": { "node": ">=20" },
+  "license": "MIT",
+  "repository": { "type": "git", "url": "git+https://github.com/yagami271/fluffice.git" },
+  "homepage": "https://github.com/yagami271/fluffice#readme",
+  "bugs": "https://github.com/yagami271/fluffice/issues",
+  "keywords": ["claude", "claude-code", "ai-agents", "dashboard", "ambient-display", "threejs", "developer-tools"]
+}

@@ -1,0 +1,10 @@
+{
+  "name": "fluffice",
+  "version": "0.1.0",
+  "description": "A plush office on your screen that shows which Claude Code session needs you.",
+  "author": { "name": "yagami271" },
+  "homepage": "https://github.com/yagami271/fluffice",
+  "repository": "https://github.com/yagami271/fluffice",
+  "license": "MIT",
+  "keywords": ["dashboard", "sessions", "ambient-display", "notifications"]
+}

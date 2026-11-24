@@ -1,0 +1,11 @@
+{
+  "name": "fluffice",
+  "owner": { "name": "yagami271" },
+  "plugins": [
+    {
+      "name": "fluffice",
+      "source": "./",
+      "description": "A plush office on your screen that shows which Claude Code session needs you."
+    }
+  ]
+}
